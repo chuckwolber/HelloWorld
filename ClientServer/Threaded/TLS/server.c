@@ -30,10 +30,12 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-unsigned int PORT;
+uint16_t PORT;
 int NUM_ARGS = 1;
 
 pthread_mutex_t MUTEX_STDOUT;
+pthread_mutex_t MUTEX_STDERR;
+SSL_CTX *ctx = NULL;
 
 int check_args(int argc, char** argv);
 void init_mutexes();
@@ -43,14 +45,18 @@ void* client_thread(void* client_fd);
 void usage(const char* exec, const char* message);
 
 int main(int argc, char **argv) {
+    signal(SIGPIPE, SIG_IGN); /* Avoid SIGPIPE on short writes. */
     if (!check_args(argc, argv))
         return(1);
 
+    ctx = ssl_init(SERVER);
     init_mutexes();
     int sock_fd = server_start();
     service_clients(sock_fd); /* Not expected to exit. */
 
     pthread_mutex_destroy(&MUTEX_STDOUT);
+    pthread_mutex_destroy(&MUTEX_STDERR);
+    SSL_CTX_free(ctx);
     close(sock_fd);
 
     return(0);
@@ -60,6 +66,9 @@ void init_mutexes() {
     errno = pthread_mutex_init(&MUTEX_STDOUT, NULL);
     if (errno < 0)
         error("ERROR: Unable to initialize STDOUT mutex");
+    errno = pthread_mutex_init(&MUTEX_STDERR, NULL);
+    if (errno < 0)
+        error("ERROR: Unable to initialize STDERR mutex");
 }
 
 int server_start() {
@@ -116,7 +125,7 @@ void service_clients(int sock_fd) {
         if (*client_fd < 0) {
             free(client_fd);
             perror("ERROR: Failed to accept client connection");
-            sleep(1); /* Prevent a runaway. */
+            sleep(1);
             continue;
         }
 
@@ -139,18 +148,61 @@ void service_clients(int sock_fd) {
 }
 
 void* client_thread(void* client_fd) {
+    int ret_val;
     int fd = *((int *)client_fd);
-    char* buf = recv_s(fd);
+
+    SSL* ssl = SSL_new(ctx);
+    if (ssl == NULL) {
+        ssl_error();
+        pthread_mutex_lock(&MUTEX_STDERR);
+        fprintf(stderr, "[%d] ERROR: Failed to create SSL pointer.\n", fd);
+        pthread_mutex_unlock(&MUTEX_STDERR);
+        goto close_fd;
+    }
+
+    if (SSL_set_fd(ssl, fd) <= 0) {
+        ssl_error();
+        pthread_mutex_lock(&MUTEX_STDERR);
+        fprintf(stderr, "[%d] ERROR: Failed to assign fd to SSL pointer.\n", fd);
+        pthread_mutex_unlock(&MUTEX_STDERR);
+        goto close_ssl;
+    }
+    
+    ret_val = SSL_accept(ssl);
+    if (ret_val <= 0) {
+        ssl_io_error(ssl, ret_val);
+        ssl_error();
+        pthread_mutex_lock(&MUTEX_STDERR);
+        fprintf(stderr, "[%d] ERROR: Failed to get TLS handshake.\n", fd);
+        pthread_mutex_unlock(&MUTEX_STDERR);
+        goto close_ssl;
+    }
+
+    char* buf = ssl_recv_s(ssl);
+    if (buf == NULL) {
+        pthread_mutex_lock(&MUTEX_STDERR);
+        fprintf(stderr, "[%d] ERROR: Client closed socket.\n", fd);
+        pthread_mutex_unlock(&MUTEX_STDERR);
+        goto close_ssl;
+    }
 
     size_t len = strlen(buf);
-    char rev[len+1];
+    char* rev = (char*)calloc(len+1, sizeof(char));
+    if (rev == NULL) {
+        fprintf(stderr, "[%d] ERROR: Failed to allocate memory for rev buf.\n", fd);
+        goto close;
+    }
 
     size_t j = 0;
     for (size_t i=len; i>0; i--)
         rev[j++] = buf[i-1];
-    rev[j] = '\0';
     
-    send_s(fd, rev);
+    if (ssl_send_s(ssl, rev) < 0) {
+        pthread_mutex_lock(&MUTEX_STDERR);
+        fprintf(stderr, "[%d] Client closed socket...\n", fd);
+        pthread_mutex_unlock(&MUTEX_STDERR);
+        goto close;
+    }
 
     pthread_mutex_lock(&MUTEX_STDOUT);
     fprintf(stdout, "[%d] Received String: %s\n", fd, buf);
@@ -158,9 +210,16 @@ void* client_thread(void* client_fd) {
     fprintf(stdout, "[%d] Closing client connection...\n", fd);
     pthread_mutex_unlock(&MUTEX_STDOUT);
 
+close:
+    free(rev);
+    free(buf);
+close_ssl:
+    if (SSL_shutdown(ssl) == 0)
+        SSL_shutdown(ssl);
+    SSL_free(ssl);
+close_fd:
     close(fd);
     free(client_fd);
-    free(buf);
 
     return NULL;
 }
@@ -174,7 +233,7 @@ int check_args(int argc, char **argv) {
         return FALSE;
     }
 
-    PORT = (unsigned int)atoi(argv[1]);
+    PORT = (uint16_t)atoi(argv[1]);
     if (PORT < PORT_MIN || PORT > PORT_MAX) {
         usage(argv[0], "Invalid port requested.");
         return FALSE;
@@ -188,5 +247,7 @@ void usage(const char* exec, const char* message) {
         fprintf(stderr, "ERROR: %s\n", message);
     
     fprintf(stderr, "\nusage: %s port\n", exec);
-    fprintf(stderr, " * Port must be >= %d and <= %d\n\n", PORT_MIN, PORT_MAX);
+    fprintf(stderr, " * Port must be >= %d and <= %d\n", PORT_MIN, PORT_MAX);
+    fprintf(stderr, " * Set SSLKEYLOGFILE for wireshark decryption.\n");
+    fprintf(stderr, "\n");
 }
