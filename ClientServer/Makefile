@@ -1,11 +1,11 @@
-PROJECTS = ClientServer
+PROJECTS = Threaded
 .PHONY: clean $(PROJECTS)
 
 all: $(PROJECTS)
 
-ClientServer:
+Threaded:
 	$(MAKE) -C $@ all
 
 clean:
-	$(MAKE) -C ClientServer clean
+	$(MAKE) -C Threaded clean
 

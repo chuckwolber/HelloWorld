@@ -28,7 +28,7 @@
 
 char* SERVER_ADDR_STRING;
 char* CLIENT_STRING;
-unsigned int PORT;
+uint16_t PORT;
 int NUM_ARGS = 3;
 
 int set_args(int argc, char** argv);
@@ -36,6 +36,7 @@ void usage(const char* exec, const char* message);
 int server_connect();
 
 int main(int argc, char **argv) {
+    signal(SIGPIPE, SIG_IGN); /* Avoid SIGPIPE on short writes. */
     if (!set_args(argc, argv))
         return(1);
 
@@ -67,7 +68,7 @@ int server_connect() {
     
     struct sockaddr_in sock_addr;
     sock_addr.sin_family = AF_INET;
-    memcpy((char*)&sock_addr.sin_addr.s_addr, (char*)server->h_addr, server->h_length);
+    memcpy((char*)&sock_addr.sin_addr.s_addr, (char*)server->h_addr, (size_t)server->h_length);
     sock_addr.sin_port = htons(PORT);
 
     if (connect(sock_fd, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0) {
@@ -94,7 +95,7 @@ int set_args(int argc, char **argv) {
         return FALSE;
     }
 
-    PORT = (unsigned int)atoi(argv[2]);
+    PORT = (uint16_t)atoi(argv[2]);
     if (PORT < PORT_MIN || PORT > PORT_MAX) {
         usage(argv[0], "Invalid port requested.");
         return FALSE;

@@ -25,18 +25,23 @@
 #include "common.h"
 
 char* recv_s(int sockfd) {
-    size_t size = 0;
-    char* buf = (char*)malloc(sizeof(char));
+    size_t size = sizeof(char);
+    char* buf = (char*)malloc(size);
     if (buf == NULL)
         error("ERROR: Failed to allocate memory");
 
-    do {
-        buf = realloc(buf, 1);
-        if (buf == NULL)
+    while (TRUE) {
+        char* nbuf = realloc(buf, 1);
+        if (nbuf == NULL)
             error("ERROR: Failed to allocate memory");
-        recv_n(sockfd, buf+size, 1);
-        buf[size+1] = '\0';
-    } while (buf[size++] != '\0');
+        else
+            buf = nbuf;
+        if (recv_n(sockfd, buf+size-1, 1) < 0)
+            return NULL;
+        if (buf[size-1] == '\0')
+            break;
+        size++;
+    }
 
     return buf;
 }

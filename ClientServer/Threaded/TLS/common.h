@@ -23,6 +23,9 @@
  */
 
 #include <arpa/inet.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,18 +37,23 @@
 
 static const int TRUE = 1;
 static const int FALSE = 0;
-
-static const unsigned int PORT_MIN = 0;
+static const unsigned int PORT_MIN = 1024;
 static const unsigned int PORT_MAX = 65535;
 
+enum CS_TYPE {CLIENT, SERVER};
+
+SSL_CTX* ssl_init(enum CS_TYPE type);
+
 /* Send and receive a NULL terminated string. */
-char* recv_s(int sockfd);
-ssize_t send_s(int sockfd, char* buf);
+char* ssl_recv_s(SSL* ssl);
+int ssl_send_s(SSL* ssl, char* buf);
 
 /* Send and receive. */
-ssize_t recv_n(int sockfd, char* buf, ssize_t len);
-ssize_t send_n(int sockfd, char* buf, ssize_t len);
+int ssl_recv_n(SSL* ssl, char* buf, int len);
+int ssl_send_n(SSL* ssl, char* buf, int len);
 
 void error(const char* msg);
+void ssl_error();
+int ssl_io_error(const SSL* ssl, int ret);
 
 #endif // COMMON_H
