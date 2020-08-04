@@ -32,22 +32,22 @@ char* recv_s(int sockfd) {
 
     while (TRUE) {
         char* nbuf = realloc(buf, 1);
-        if (nbuf == NULL)
+        if (nbuf == NULL) {
+            free(buf);
             error("ERROR: Failed to allocate memory");
-        else
+        } else {
             buf = nbuf;
-        if (recv_n(sockfd, buf+size-1, 1) < 0)
+        }
+        if (recv_n(sockfd, buf+size-1, 1) < 1) {
+            free(buf);
             return NULL;
+        }
         if (buf[size-1] == '\0')
             break;
         size++;
     }
 
     return buf;
-}
-
-ssize_t send_s(int sockfd, char* buf) {
-    return send_n(sockfd, buf, (ssize_t)(strlen(buf)+1));
 }
 
 ssize_t recv_n(int sockfd, char* buf, ssize_t len) {
@@ -61,7 +61,7 @@ ssize_t recv_n(int sockfd, char* buf, ssize_t len) {
             perror("ERROR: recv() failed");
             return -1;
         } else if (cur_bytes_received == 0) {
-            fprintf(stderr, "[%d] ERROR: Client closed socket...\n", sockfd);
+            fprintf(stderr, "[%d] Client closed socket...\n", sockfd);
             return -1;
         }
         len -= cur_bytes_received;
@@ -69,6 +69,10 @@ ssize_t recv_n(int sockfd, char* buf, ssize_t len) {
     }
 
     return tot_bytes_received;
+}
+
+ssize_t send_s(int sockfd, char* buf) {
+    return send_n(sockfd, buf, (ssize_t)(strlen(buf)+1));
 }
 
 ssize_t send_n(int sockfd, char* buf, ssize_t len) {
@@ -80,9 +84,6 @@ ssize_t send_n(int sockfd, char* buf, ssize_t len) {
         tot_bytes_sent += cur_bytes_sent;
         if (cur_bytes_sent < 0) {
             perror("ERROR: send() failed");
-            return -1;
-        } else if (cur_bytes_sent == 0) {
-            fprintf(stderr, "[%d] ERROR: Client closed socket...\n", sockfd);
             return -1;
         }
         len -= cur_bytes_sent;
