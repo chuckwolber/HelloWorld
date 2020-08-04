@@ -78,22 +78,22 @@ char* ssl_recv_s(SSL* ssl) {
 
     while (TRUE) {
         char* nbuf = realloc(buf, size+1);
-        if (nbuf == NULL)
+        if (nbuf == NULL) {
+            free(buf);
             error("ERROR: Failed to allocate memory");
-        else
+        } else {
             buf = nbuf;
-        if (ssl_recv_n(ssl, buf+size-1, 1) < 0)
+        }
+        if (ssl_recv_n(ssl, buf+size-1, 1) < 1) {
+            free(buf);
             return NULL;
+        }
         if (buf[size-1] == '\0')
             break;
         size++;
     }
 
     return buf;
-}
-
-int ssl_send_s(SSL* ssl, char* buf) {
-    return ssl_send_n(ssl, buf, (int)(strlen(buf)+1));
 }
 
 int ssl_recv_n(SSL* ssl, char* buf, int len) {
@@ -103,18 +103,20 @@ int ssl_recv_n(SSL* ssl, char* buf, int len) {
     while (len > 0) {
         cur_bytes_received = SSL_read(ssl, buf, len);
         tot_bytes_received += cur_bytes_received;
-        if (cur_bytes_received < 0) {
+        if (cur_bytes_received <= 0) {
             ssl_io_error(ssl, (int)cur_bytes_received);
             ssl_error();
             return -1;
-        } else if (cur_bytes_received == 0) {
-            return -1; /* Client closed connection. */
         }
         len -= cur_bytes_received;
         buf += cur_bytes_received;
     }
 
     return tot_bytes_received;
+}
+
+int ssl_send_s(SSL* ssl, char* buf) {
+    return ssl_send_n(ssl, buf, (int)(strlen(buf)+1));
 }
 
 int ssl_send_n(SSL* ssl, char* buf, int len) {
@@ -124,12 +126,10 @@ int ssl_send_n(SSL* ssl, char* buf, int len) {
     while (len > 0) {
         cur_bytes_sent = SSL_write(ssl, buf, len);
         tot_bytes_sent += cur_bytes_sent;
-        if (cur_bytes_sent < 0) {
+        if (cur_bytes_sent <= 0) {
             ssl_io_error(ssl, cur_bytes_sent);
             ssl_error();
             return -1;
-        } else if (cur_bytes_sent == 0) {
-            return -1; /* Client closed connection. */
         }
         len -= cur_bytes_sent;
         buf += cur_bytes_sent;
