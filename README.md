@@ -2,7 +2,9 @@
 
 ## Table of Contents
 * [Overview](#overview)
+* [Logging](Logging/README.md)
 * [Client/Server](ClientServer/README.md)
+* [License](#license)
 
 ## Overview
 Bucket for demonstrating discrete "building block" type programming concepts.
@@ -17,4 +19,8 @@ time to work out in the same way in the future. Most of these have analogs
 elsewhere that may be clearer and perhaps even more correct.
 
 Patches are encouraged and welcomed!
+
+## License
+This repository contains free software; you can redistribute it and/or modify
+it under the terms of the MIT license. See [LICENSE](LICENSE) for details.
 
