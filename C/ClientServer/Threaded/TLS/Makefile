@@ -33,24 +33,24 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 $(EXEC_CLIENT): $(BUILD_DIR)/$(EXEC_CLIENT)
-$(BUILD_DIR)/$(EXEC_CLIENT): $(BUILD_DIR) $(OBJS_CLIENT) $(OBJS_COMMON)
+$(BUILD_DIR)/$(EXEC_CLIENT): $(OBJS_CLIENT) $(OBJS_COMMON) | $(BUILD_DIR)
 	$(CC) $(CXXFLAGS) $(OBJS_CLIENT) $(SSLINC) $(SSL) $(OBJS_COMMON) -o $@
 
 $(EXEC_SERVER): $(BUILD_DIR)/$(EXEC_SERVER) cert.pem
-$(BUILD_DIR)/$(EXEC_SERVER): $(BUILD_DIR) $(OBJS_SERVER) $(OBJS_COMMON)
+$(BUILD_DIR)/$(EXEC_SERVER): $(OBJS_SERVER) $(OBJS_COMMON) | $(BUILD_DIR)
 	$(CC) $(CXXFLAGS) $(OBJS_SERVER) $(SSLINC) $(SSL) $(OBJS_COMMON) -o $@
 
 cert.pem:
 	openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
 	openssl rsa -in key.pem -out key.nocrypt.pem
 
-$(OBJS_CLIENT): $(SOURCE_CLIENT)
+$(OBJS_CLIENT): $(SOURCE_CLIENT) | $(BUILD_DIR)
 	$(CC) $(CXXFLAGS) $(SSLINC) -c $< -o $@
 
-$(OBJS_SERVER): $(SOURCE_SERVER)
+$(OBJS_SERVER): $(SOURCE_SERVER) | $(BUILD_DIR)
 	$(CC) $(CXXFLAGS) $(SSLINC) -c $< -o $@
 
-$(OBJS_COMMON): $(SOURCE_COMMON)
+$(OBJS_COMMON): $(SOURCE_COMMON) | $(BUILD_DIR)
 	$(CC) $(CXXFLAGS) $(SSLINC) -c $< -o $@
 
 clean:
