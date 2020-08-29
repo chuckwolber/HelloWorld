@@ -1,11 +1,14 @@
-PROJECTS = ClientServer
-.PHONY: clean $(PROJECTS)
+VERSION := 0.0.1
+PROJECTS := C C++
+
+.PHONY: clean all $(PROJECTS) $(CLEAN)
 
 all: $(PROJECTS)
 
-ClientServer:
+$(PROJECTS):
 	$(MAKE) -C $@ all
 
 clean:
-	$(MAKE) -C ClientServer clean
+	make -C C clean
+	make -C C++ clean
 

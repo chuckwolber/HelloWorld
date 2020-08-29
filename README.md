@@ -2,23 +2,31 @@
 
 ## Table of Contents
 * [Overview](#overview)
-* [Logging](Logging/README.md)
-* [Client/Server](ClientServer/README.md)
+* [C](C/README.md)
+* [C++](C++/README.md)
 * [License](#license)
 
 ## Overview
-Bucket for demonstrating discrete "building block" type programming concepts.
-The intention is to demonstrate ideas with the absolute bare minimum amount of
-abstraction and complexity.
+Bucket for demonstrating easy to explain, but hard to implement "building
+block" type programming concepts. These concepts lean more toward the practical
+than the theoretical, and are very likely to be of direct use in a larger
+project.
 
-Generally the stuff you find here will be "easy to explain, but not worth
-memorizing". Some of it may even be wrong, misleading, or even out of date.
+High minded things like implementations of
+[TAoCP](https://en.wikipedia.org/wiki/The_Art_of_Computer_Programming)
+algorithms are unlikely to show up here. But if I had to climb a wall to work
+something out for another project, I may take the time to pare it down to its
+minimally complex implementation and store it here.
 
-All of the concepts took time to work out, and few of them are worth spending
-time to work out in the same way in the future. Most of these have analogs
-elsewhere that may be clearer and perhaps even more correct.
+All of the concepts took time to work out that I wish to avoid investing in the
+same way in the future. Most of these concepts have analogs elsewhere that may
+be clearer and perhaps even more correct. What you find here may also be wrong,
+misleading, dangerously insecure, and out of date.
 
-Patches are encouraged and welcomed!
+Use what you find here as a general guide, and do not use any of it as a
+license to stop thinking.
+
+Patches are welcome and encouraged!
 
 ## License
 This repository contains free software; you can redistribute it and/or modify
