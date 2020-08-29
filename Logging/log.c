@@ -104,12 +104,14 @@ static void rolling_appender_callback(log_Event *ev) {
   file_callback(ev);
 
   struct stat buf;
-  if (lstat(ev->ra.file_name, &buf) < 0) {
+  if (stat(ev->ra.file_name, &buf) < 0) {
     sprintf(msg, "Unable to stat log file: %s", ev->ra.file_name);
     perror(msg);
     free(msg);
     return;
   }
+
+  free(msg);
 
   if (buf.st_size >= ev->ra.max_log_size) {
     char* old = (char*)calloc(strlen(ev->ra.file_name)+10, sizeof(char));
