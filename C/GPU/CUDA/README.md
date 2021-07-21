@@ -1,13 +1,11 @@
-# C Language Hello World Projects
+# NVIDIA CUDA GPU Programming
 
 ## Table of Contents
 * [Overview](#overview)
-* [Logging](Logging/README.md)
-* [Client/Server](ClientServer/README.md)
-* [GPU](GPU/README.md)
+* [Basics](Basics/README.md)
 
 ## Overview
-C language specific Hello World projects.
+NVIDIA CUDA GPU Programming Topics
 
 ## License
 This repository contains free software; you can redistribute it and/or modify
